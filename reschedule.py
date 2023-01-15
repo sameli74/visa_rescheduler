@@ -36,7 +36,7 @@ def get_available_date(dates, last_seen, schedule_date):
         if is_earlier(date, schedule_date) and date != last_seen:
             _, month, day = date.split('-')
             last_seen = date
-            return date
+            return date, last_seen
 
 # import requests
 # TIME_URL = f"https://ais.usvisa-info.com/{COUNTRY_CODE}/niv/schedule/{SCHEDULE_ID}/appointment/times/{FACILITY_ID}.json?date=%s&appointments[expedite]=false"

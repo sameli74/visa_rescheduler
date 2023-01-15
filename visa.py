@@ -1,10 +1,9 @@
 # -*- coding: utf8 -*-
 
 import time
-# import platform
 import configparser
 from datetime import datetime
-
+import sys
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -13,8 +12,12 @@ from webdriver_manager.chrome import ChromeDriverManager
 from login import login
 from reschedule import get_date
 from reschedule import get_available_date
+from notify import gmail_send_message, push_notification
 
-
+SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+SENDER = "soroush.ameli@gmail.com"
+RECEIVERS = ["soroush.ameli@gmail.com", "rezapour92z@gmail.com"]
+SUBJECT = "Action Required: US Visa Appointment Available!"
 
 # SENDGRID_API_KEY = config['SENDGRID']['SENDGRID_API_KEY']
 # PUSH_TOKEN = config['PUSHOVER']['PUSH_TOKEN']
@@ -38,6 +41,20 @@ def print_dates(dates):
         print("%s \t business_day: %s" % (d.get('date'), d.get('business_day')))
     print()
 
+def embassy_dates():
+    dates = get_date(driver, configs)[:5]
+    if not dates:
+        msg = "List is empty. Consider shutting down the poller if the issue persists"
+        gmail_send_message(msg, SENDER,
+                          RECEIVERS,
+                          "US Visa Poller Detection",
+                          SCOPES
+        )
+        # sys.exit(1)
+    else:
+        print_dates(dates)
+    return dates
+
 
 
 if __name__ == "__main__":
@@ -52,42 +69,33 @@ if __name__ == "__main__":
     login(driver, configs)
     retry_count = 0
     last_seen = None
-    EXIT = False
     while 1:
         if retry_count > 6:
             break
         try:
             print(datetime.today())
             print(f"Retry count: {retry_count}")
-
-            dates = get_date(driver, configs)[:5]
+            dates = embassy_dates()
             if not dates:
-              msg = "List is empty"
-              EXIT = True
-              # send_notification(msg)
-            print_dates(dates)
-            date = get_available_date(dates, last_seen, configs["my_schedule_date"])
+                time.sleep(configs["cooldown_time"])
+                continue
+            date, last_seen = get_available_date(dates, last_seen, configs["my_schedule_date"])
             print(f"New date: {date}")
             if date:
-                print("doing some operation")
-                # reschedule(date)
-                # push_notification(dates)
-
-            if(EXIT):
-                print("------------------exit")
-                break
-
-            if not dates:
-              msg = "List is empty"
-              # send_notification(msg)
-              time.sleep(configs["cooldown_time"])
-            else:
-              time.sleep(configs["retry_time"])
+                push_notification(dates, SENDER,
+                                  RECEIVERS,
+                                  SUBJECT,
+                                  SCOPES,
+                                  )
+            time.sleep(configs["retry_time"])
 
         except:
             retry_count += 1
             time.sleep(configs["exception_time"])
 
-    if(not EXIT):
-        print("crashed!")
-        # send_notification("HELP! Crashed.")
+    print("crashed!")
+    gmail_send_message("", SENDER,
+                      RECEIVERS,
+                      "Action Required: US VISA Poller Crashed",
+                      SCOPES,
+                      )
