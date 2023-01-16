@@ -50,6 +50,7 @@ def embassy_dates():
                           "US Visa Poller Detection",
                           SCOPES
         )
+        print("The date list was empty. Poller might have been detected")
         # sys.exit(1)
     else:
         print_dates(dates)
@@ -69,7 +70,7 @@ if __name__ == "__main__":
     login(driver, configs)
     retry_count = 0
     last_seen = None
-    while 1:
+    while True:
         if retry_count > 6:
             break
         try:

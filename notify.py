@@ -29,7 +29,7 @@ def authenticate(scopes):
             token.write(creds.to_json())
     return creds
 
-def gmail_send_message(message, sender, receiver, subject, scopes):
+def gmail_send_message(msg, sender, receiver, subject, scopes):
     """Create and send an email message
     Print the returned  message id
     Returns: Message object, including message id
@@ -44,7 +44,7 @@ def gmail_send_message(message, sender, receiver, subject, scopes):
         service = build('gmail', 'v1', credentials=creds)
         message = EmailMessage()
 
-        message.set_content('This is automated draft mail')
+        message.set_content(msg)
 
         message['To'] = receiver
         message['From'] = sender
